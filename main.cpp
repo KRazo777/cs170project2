@@ -44,11 +44,139 @@ vector<Instance> loadData(const string& filename) {
     return data;
 }
 
+double squaredDistance(const Instance& a, const Instance& b, const vector<int>& featureSet) {
+    double dist = 0.0;
+
+    int feature;
+    for (int i = 0; i < (int)featureSet.size(); i++) {
+        feature = featureSet[i];
+        double diff = a.features[feature - 1] - b.features[feature - 1];
+        dist += diff * diff;
+    }
+
+    return dist;
+}
+
+double leaveOneOutAccuracy(const vector<Instance>& data, const vector<int>& featureSet) {
+    if (featureSet.empty()) {
+        
+        int count1 = 0;
+        int count2 = 0;
+        
+        for (int i = 0; i < (int)data.size(); i++) {
+            if (data[i].label == 1.0) {
+                count1++;
+            } else {
+                count2++;
+            }
+        }
+
+        return 100.0 * max(count1, count2) / data.size();
+    }
+
+    int correct = 0;
+
+    for (int i = 0; i < (int)data.size(); i++) {
+        double bestDistance = numeric_limits<double>::max();
+        double nearestLabel = -1;
+
+        for (int j = 0; j < (int)data.size(); j++) {
+            if (i == j) { continue; }
+
+            double dist = squaredDistance(data[i], data[j], featureSet);
+
+            if (dist < bestDistance) {
+                bestDistance = dist;
+                nearestLabel = data[j].label;
+            }
+        }
+
+        if (nearestLabel == data[i].label) {
+            correct++;
+        }
+    }
+
+    return 100.0 * correct / data.size();
+}
+
+string featureSetToString(const vector<int>& featureSet) {
+    if (featureSet.empty()) {
+        return "{}";
+    }
+
+    string s = "{";
+
+    for (int i = 0; i < (int)featureSet.size(); i++) {
+        s += to_string(featureSet[i]);
+
+        if (i != (int)featureSet.size() - 1) {
+            s += ",";
+        }
+    }
+
+    s += "}";
+    return s;
+}
+
+vector<int> forwardSelection(const vector<Instance>& data, int numFeatures) {
+    vector<int> currentSet;
+    vector<int> bestOverallSet;
+
+    double bestOverallAccuracy = 0.0;
+
+    cout << "Beginning search: \n";
+
+    for (int level = 1; level <= numFeatures; level++) {
+        int featureToAddAtThisLevel = -1;
+        double bestSoFar = 0.0;
+
+        for (int feature = 1; feature <= numFeatures; feature++) {
+            // Skip if feature is already in the current set
+            if (find(currentSet.begin(), currentSet.end(), feature) != currentSet.end()) {
+                continue;
+            }
+
+            vector<int> tempSet = currentSet;
+            tempSet.push_back(feature);
+            sort(tempSet.begin(), tempSet.end());
+
+            double accuracy = leaveOneOutAccuracy(data, tempSet);
+
+            cout << "   Using feature(s) " << featureSetToString(tempSet) << " accuracy is " << fixed << setprecision(1) << accuracy << "% \n";
+
+            if (accuracy > bestSoFar) {
+                bestSoFar = accuracy;
+                featureToAddAtThisLevel = feature;
+            }
+        }
+
+        if (featureToAddAtThisLevel != -1) {
+
+            currentSet.push_back(featureToAddAtThisLevel);
+            sort(currentSet.begin(), currentSet.end());
+
+            cout << "Feature set " << featureSetToString(currentSet) << " was best, accuracy is " << fixed << setprecision(1) << bestSoFar << "%\n\n";
+
+            if (bestSoFar > bestOverallAccuracy) {
+                bestOverallAccuracy = bestSoFar;
+                bestOverallSet = currentSet;
+            } else {
+                cout << "(Warning, Accuracy has decreased! Continuing search in case of local maxima)\n\n";
+            }
+        }
+    }
+
+    cout << "Finished search! The best feature subset is " << featureSetToString(bestOverallSet) << " which has an accuracy of " << fixed << setprecision(1) << bestOverallAccuracy << "%\n";
+
+    return bestOverallSet;
+}
+
 
 int main() {
         cout << "Welcome to Kevin's Feature Selection Algorithm \n";
 
-        string filename = "Small_data/CS170_Small_DataSet__3.txt";
+        string filename = "Small_data/CS170_Small_DataSet__1.txt";
+        cout << "Running on file: " << filename << "\n";
 
         vector<Instance> data = loadData(filename);
 
@@ -67,6 +195,17 @@ int main() {
         vector<int> allFeatures;
         for (int i = 1; i <= numFeatures; i++) {
             allFeatures.push_back(i);
+        }
+
+        double allAccuracy = leaveOneOutAccuracy(data, allFeatures);
+        cout << "Running nearest neighbor with all " << numFeatures << " features, using \"leaving-one-out\" evaluation, I get an accuracy of " << fixed << setprecision(1) << allAccuracy << "%\n\n";
+
+        if (choice == 1) {
+            forwardSelection(data, numFeatures);
+        } else if (choice == 2) {
+            //
+        } else {
+            cout << "Invalid choice.\n";
         }
 
          return 0;
