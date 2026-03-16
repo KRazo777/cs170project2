@@ -235,7 +235,7 @@ vector<int> backwardElimination(const vector<Instance>& data, int numFeatures) {
 int main() {
         cout << "Welcome to Kevin's Feature Selection Algorithm \n";
 
-        string filename = "CS170_Large_DataSets_all/CS170_Large_DataSet__2.txt";
+        string filename = "Small_data/CS170_Small_DataSet__90.txt";
         cout << "Running on file: " << filename << "\n";
 
         vector<Instance> data = loadData(filename);
