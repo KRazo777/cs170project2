@@ -171,11 +171,71 @@ vector<int> forwardSelection(const vector<Instance>& data, int numFeatures) {
     return bestOverallSet;
 }
 
+vector<int> backwardElimination(const vector<Instance>& data, int numFeatures) {
+    vector<int> currentSet;
+    
+    for (int i = 1; i <= numFeatures; i++) {
+        currentSet.push_back(i);
+    }
+
+    vector<int> bestOverallSet = currentSet;
+    double bestOverallAccuracy = leaveOneOutAccuracy(data, currentSet);
+
+    cout << "Beginning search: \n";
+
+    for (int level = numFeatures; level >= 1; level--) {
+        int featureToRemoveAtThisLevel = -1;
+        double bestSoFar = 0.0;
+        vector<int> bestCandidateSet;
+
+        int feature;
+        for (int i = 0; i < (int)currentSet.size(); i++) {
+            feature = currentSet[i];
+            vector<int> tempSet;
+
+            for (int j = 0; j < (int)currentSet.size(); j++) {
+                if (currentSet[j] != feature) {
+                    tempSet.push_back(currentSet[j]);
+                }
+            }
+
+            double accuracy = leaveOneOutAccuracy(data, tempSet);
+
+            cout << "   Using feature(s) " << featureSetToString(tempSet) << " accuracy is " << fixed << setprecision(1) << accuracy << "% \n";
+
+            if (accuracy > bestSoFar) {
+                bestSoFar = accuracy;
+                featureToRemoveAtThisLevel = feature;
+                bestCandidateSet = tempSet;
+            }
+        }
+
+        if (featureToRemoveAtThisLevel != -1) {
+            currentSet = bestCandidateSet;
+
+            cout << "Feature set " << featureSetToString(currentSet) << " was best, accuracy is " << fixed << setprecision(1) << bestSoFar << "% \n\n";
+
+            if (bestSoFar > bestOverallAccuracy) {
+                bestOverallAccuracy = bestSoFar;
+                bestOverallSet = currentSet;
+            } else {
+                cout << "(Warning, Accuracy has decreased! Continuing search in case of local maxima)\n\n";
+            }
+        }
+
+        if (currentSet.empty()) break;
+    }
+
+    cout << "Finished search! The best feature subset is " << featureSetToString(bestOverallSet) << " which has an accuracy of " << fixed << setprecision(1) << bestOverallAccuracy << "% \n";
+
+    return bestOverallSet;
+}
+
 
 int main() {
         cout << "Welcome to Kevin's Feature Selection Algorithm \n";
 
-        string filename = "Small_data/CS170_Small_DataSet__1.txt";
+        string filename = "CS170_Large_DataSets_all/CS170_Large_DataSet__2.txt";
         cout << "Running on file: " << filename << "\n";
 
         vector<Instance> data = loadData(filename);
@@ -203,7 +263,7 @@ int main() {
         if (choice == 1) {
             forwardSelection(data, numFeatures);
         } else if (choice == 2) {
-            //
+            backwardElimination(data, numFeatures);
         } else {
             cout << "Invalid choice.\n";
         }
