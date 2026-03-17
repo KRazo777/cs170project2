@@ -1,2 +1,2 @@
 # Feature Selection with Nearest Neighbor
-This project implements Forward Selection and Backward Elimination for feature selection using Nearest Neighbor classifier
+This project implements Forward Selection and Backward Elimination for feature selection using Nearest Neighbor classifier as part of CS170 Project 2
